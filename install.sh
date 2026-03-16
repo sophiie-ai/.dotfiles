@@ -4,19 +4,67 @@ set -euo pipefail
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_FILE="$DOTFILES_DIR/install.log"
 
-# --- Helpers ---
-info()  { printf "\033[1;34m[info]\033[0m  %s\n" "$1"; }
-ok()    { printf "\033[1;32m[ok]\033[0m    %s\n" "$1"; }
-warn()  { printf "\033[1;33m[warn]\033[0m  %s\n" "$1"; }
-err()   { printf "\033[1;31m[error]\033[0m %s\n" "$1"; }
+# --- Sophiie Brand Colors (ANSI 256) ---
+# Primary blue: #36A5E1 → 38;5;74
+# Navy:         #182037 → 38;5;17
+# Success:      #22C55E → 38;5;41
+# Warning:      #F59E0B → 38;5;214
+# Error:        #EF4444 → 38;5;196
+BLUE="\033[38;5;74m"
+NAVY="\033[38;5;17m"
+GREEN="\033[38;5;41m"
+YELLOW="\033[38;5;214m"
+RED="\033[38;5;196m"
+DIM="\033[2m"
+BOLD="\033[1m"
+RESET="\033[0m"
 
-log_and_run() {
-  info "$1"
+# --- Spinner ---
+SPINNER_PID=""
+SPINNER_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+
+spinner_start() {
+  local msg="$1"
+  (
+    local i=0
+    while true; do
+      printf "\r  ${BLUE}${SPINNER_FRAMES[$i]}${RESET} %s" "$msg"
+      i=$(( (i + 1) % ${#SPINNER_FRAMES[@]} ))
+      sleep 0.08
+    done
+  ) &
+  SPINNER_PID=$!
+}
+
+spinner_stop() {
+  if [[ -n "$SPINNER_PID" ]]; then
+    kill "$SPINNER_PID" 2>/dev/null
+    wait "$SPINNER_PID" 2>/dev/null || true
+    SPINNER_PID=""
+    printf "\r\033[K"  # Clear the spinner line
+  fi
+}
+
+# Clean up spinner on exit
+trap 'spinner_stop' EXIT
+
+# --- Helpers ---
+info()    { printf "  ${BLUE}${BOLD}▸${RESET} %s\n" "$1"; }
+ok()      { printf "  ${GREEN}✓${RESET} %s\n" "$1"; }
+warn()    { printf "  ${YELLOW}⚠${RESET} %s\n" "$1"; }
+err()     { printf "  ${RED}✗${RESET} %s\n" "$1"; }
+section() { echo ""; printf "  ${BLUE}${BOLD}━━━ %s ━━━${RESET}\n" "$1"; echo ""; }
+
+run_with_spinner() {
+  local msg="$1"
   shift
+  spinner_start "$msg"
   if "$@" >> "$LOG_FILE" 2>&1; then
-    ok "Done"
+    spinner_stop
+    ok "$msg"
   else
-    err "Failed — check $LOG_FILE"
+    spinner_stop
+    err "$msg — check $LOG_FILE"
     return 1
   fi
 }
@@ -28,31 +76,38 @@ if [[ "$(uname)" != "Darwin" ]]; then
 fi
 
 echo "" > "$LOG_FILE"
-info "Sophiie Engineering Environment Setup"
-info "Log: $LOG_FILE"
 echo ""
+printf "  ${BLUE}${BOLD}╔═══════════════════════════════════════╗${RESET}\n"
+printf "  ${BLUE}${BOLD}║${RESET}   ${BOLD}Sophiie${RESET} ${DIM}Engineering Environment${RESET}    ${BLUE}${BOLD}║${RESET}\n"
+printf "  ${BLUE}${BOLD}╚═══════════════════════════════════════╝${RESET}\n"
+echo ""
+printf "  ${DIM}Log: %s${RESET}\n" "$LOG_FILE"
 
 # --- Sudo: ask once, keep alive ---
+section "Privileges"
 info "Some steps require admin privileges. You'll be asked for your password once."
 sudo -v
 # Keep sudo alive in the background until the script finishes
 while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+ok "Sudo cached"
 
 # --- 1. Xcode Command Line Tools ---
+section "Xcode Command Line Tools"
 if ! xcode-select -p &>/dev/null; then
-  info "Installing Xcode Command Line Tools (required for git, compilers, etc.)"
-
   # Create the placeholder file that triggers a headless install via softwareupdate
   sudo touch /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
 
+  spinner_start "Searching for CLT package"
   CLT_PKG=$(softwareupdate --list 2>&1 \
     | grep -o 'Command Line Tools for Xcode-[0-9.]*' \
     | sort -V \
     | tail -1)
+  spinner_stop
 
   if [[ -n "$CLT_PKG" ]]; then
     info "Found: $CLT_PKG"
-    sudo softwareupdate --install "$CLT_PKG" --verbose
+    run_with_spinner "Installing Xcode CLT" \
+      sudo softwareupdate --install "$CLT_PKG"
   else
     err "Could not find CLT package. Run 'xcode-select --install' manually and re-run."
     sudo rm -f /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
@@ -61,7 +116,6 @@ if ! xcode-select -p &>/dev/null; then
 
   sudo rm -f /tmp/.com.apple.dt.CommandLineTools.installondemand.in-progress
 
-  # Verify
   if ! xcode-select -p &>/dev/null; then
     err "Xcode CLT installation failed. Please install manually and re-run."
     exit 1
@@ -72,11 +126,11 @@ else
 fi
 
 # --- 2. Homebrew ---
+section "Homebrew"
 if ! command -v brew &>/dev/null; then
-  log_and_run "Installing Homebrew" \
+  run_with_spinner "Installing Homebrew" \
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-  # Add brew to PATH for the rest of this script
   if [[ -f /opt/homebrew/bin/brew ]]; then
     eval "$(/opt/homebrew/bin/brew shellenv)"
   fi
@@ -85,12 +139,13 @@ else
 fi
 
 # --- 3. Brew Bundle ---
-log_and_run "Installing Homebrew packages" \
+run_with_spinner "Installing Homebrew packages" \
   brew bundle --file="$DOTFILES_DIR/Brewfile" --no-lock
 
 # --- 4. Oh My Zsh ---
+section "Shell"
 if [[ ! -d "$HOME/.oh-my-zsh" ]]; then
-  log_and_run "Installing Oh My Zsh" \
+  run_with_spinner "Installing Oh My Zsh" \
     sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 else
   ok "Oh My Zsh already installed"
@@ -99,7 +154,7 @@ fi
 # --- 5. Powerlevel10k ---
 P10K_DIR="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/themes/powerlevel10k"
 if [[ ! -d "$P10K_DIR" ]]; then
-  log_and_run "Installing Powerlevel10k" \
+  run_with_spinner "Installing Powerlevel10k" \
     git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "$P10K_DIR"
 else
   ok "Powerlevel10k already installed"
@@ -108,14 +163,14 @@ fi
 # --- 6. zsh-autosuggestions ---
 ZSH_AS_DIR="${ZSH_CUSTOM:-$HOME/.oh-my-zsh/custom}/plugins/zsh-autosuggestions"
 if [[ ! -d "$ZSH_AS_DIR" ]]; then
-  log_and_run "Installing zsh-autosuggestions" \
+  run_with_spinner "Installing zsh-autosuggestions" \
     git clone https://github.com/zsh-users/zsh-autosuggestions "$ZSH_AS_DIR"
 else
   ok "zsh-autosuggestions already installed"
 fi
 
 # --- 7. Global npm packages ---
-info "Installing global npm packages"
+section "npm globals"
 npm_globals=(
   "claude-code"
   "@openai/codex"
@@ -124,40 +179,35 @@ npm_globals=(
 )
 for pkg in "${npm_globals[@]}"; do
   if npm list -g "$pkg" &>/dev/null; then
-    ok "$pkg already installed"
+    ok "$pkg"
   else
-    log_and_run "Installing $pkg" npm install -g "$pkg"
+    run_with_spinner "Installing $pkg" npm install -g "$pkg"
   fi
 done
 
 # --- 8. Link dotfiles ---
-info "Linking dotfiles"
+section "Dotfiles"
 
 HOME_DIR="$DOTFILES_DIR/home"
 backup_dir="$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
 backed_up=false
 
-# Walk home/ and symlink each file to ~
 while IFS= read -r -d '' src; do
   rel="${src#$HOME_DIR/}"
   target="$HOME/$rel"
 
-  # Skip .example files — those are templates, not configs
   [[ "$rel" == *.example ]] && continue
 
-  # Ensure parent directory exists
   mkdir -p "$(dirname "$target")"
 
-  # Back up existing non-symlink files
   if [[ -f "$target" && ! -L "$target" ]]; then
     mkdir -p "$backup_dir/$(dirname "$rel")"
     cp "$target" "$backup_dir/$rel"
     rm "$target"
-    warn "Backed up ~/$rel to $backup_dir/$rel"
+    warn "Backed up ~/$rel"
     backed_up=true
   fi
 
-  # Remove existing symlink (may point to old location)
   [[ -L "$target" ]] && rm "$target"
 
   ln -s "$src" "$target"
@@ -169,21 +219,19 @@ fi
 ok "Dotfiles linked"
 
 # --- 9. Local config setup ---
-echo ""
-info "=== Local Configuration ==="
-echo ""
+section "Local Configuration"
 
 # --- 9a. Git identity ---
 GIT_LOCAL="$HOME/.config/git/config.local"
 if [[ -f "$GIT_LOCAL" ]]; then
-  ok "Git local config already exists at $GIT_LOCAL"
+  ok "Git local config already exists"
 else
   info "Let's set up your git identity (stored in ~/.config/git/config.local)"
   echo ""
 
-  read -rp "  Full name: " git_name
-  read -rp "  Email (e.g. you@sophiie.ai): " git_email
-  read -rp "  GPG signing key ID (leave blank to skip): " git_gpg_key
+  read -rp "    Full name: " git_name
+  read -rp "    Email (e.g. you@sophiie.ai): " git_email
+  read -rp "    GPG signing key ID (blank to skip): " git_gpg_key
 
   mkdir -p "$HOME/.config/git"
   cat > "$GIT_LOCAL" <<GITEOF
@@ -201,27 +249,30 @@ GITEOF
 GITEOF
   fi
 
+  echo ""
   ok "Wrote $GIT_LOCAL"
 fi
 
 # --- 9b. Shell local config ---
 ZSH_LOCAL="$HOME/.zshrc.local"
 if [[ -f "$ZSH_LOCAL" ]]; then
-  ok "Shell local config already exists at $ZSH_LOCAL"
+  ok "Shell local config already exists"
 else
-  info "Creating ~/.zshrc.local from example"
   cp "$DOTFILES_DIR/home/.zshrc.local.example" "$ZSH_LOCAL"
-  ok "Wrote $ZSH_LOCAL — edit it to add your secrets and machine-specific config"
+  ok "Created ~/.zshrc.local — edit to add your secrets"
 fi
 
-# --- 10. Remaining manual steps ---
+# --- 10. Done ---
 echo ""
-info "=== Setup Complete ==="
+printf "  ${GREEN}${BOLD}╔═══════════════════════════════════════╗${RESET}\n"
+printf "  ${GREEN}${BOLD}║${RESET}          ${BOLD}Setup Complete${RESET} ${GREEN}✓${RESET}             ${GREEN}${BOLD}║${RESET}\n"
+printf "  ${GREEN}${BOLD}╚═══════════════════════════════════════╝${RESET}\n"
 echo ""
-echo "  Remaining manual steps:"
+printf "  ${DIM}Remaining manual steps:${RESET}\n"
 echo ""
-echo "  1. Edit ~/.zshrc.local to add secrets (API keys, passphrases, etc.)"
-echo "  2. Open tmux and press Ctrl-a + I to install plugins"
-echo "  3. Restart your terminal or run: source ~/.zshrc"
+printf "    ${BLUE}1.${RESET} Edit ${BOLD}~/.zshrc.local${RESET} to add secrets\n"
+printf "    ${BLUE}2.${RESET} Open tmux and press ${BOLD}Ctrl-a + I${RESET} to install plugins\n"
+printf "    ${BLUE}3.${RESET} Restart your terminal or run: ${BOLD}source ~/.zshrc${RESET}\n"
 echo ""
-ok "Happy hacking"
+printf "  ${DIM}Happy hacking${RESET} ${BLUE}◆${RESET}\n"
+echo ""
