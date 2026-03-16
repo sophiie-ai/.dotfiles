@@ -1,0 +1,10 @@
+# Copy to ~/.config/git/config.local and fill in your values
+# cp ~/.config/git/config.local.example ~/.config/git/config.local
+
+[user]
+	name = Your Name
+	email = you@sophiie.ai
+	signingKey = YOUR_GPG_KEY_ID
+
+[gpg]
+	program = /opt/homebrew/bin/gpg

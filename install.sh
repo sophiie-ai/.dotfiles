@@ -97,7 +97,7 @@ cd "$DOTFILES_DIR"
 
 # Back up existing files that would conflict
 backup_dir="$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
-files_to_check=(".zshrc" ".config/git/config" ".config/git/ignore" ".config/tmux/tmux.conf")
+files_to_check=(".zshrc" ".p10k.zsh" ".config/git/config" ".config/git/ignore" ".config/tmux/tmux.conf")
 
 for f in "${files_to_check[@]}"; do
   target="$HOME/$f"
@@ -115,26 +115,60 @@ mkdir -p "$HOME/.config/git" "$HOME/.config/tmux"
 stow -v -d "$DOTFILES_DIR" -t "$HOME" home >> "$LOG_FILE" 2>&1
 ok "Dotfiles linked"
 
-# --- 8. Local config reminder ---
+# --- 8. Local config setup ---
+echo ""
+info "=== Local Configuration ==="
+echo ""
+
+# --- 8a. Git identity ---
+GIT_LOCAL="$HOME/.config/git/config.local"
+if [[ -f "$GIT_LOCAL" ]]; then
+  ok "Git local config already exists at $GIT_LOCAL"
+else
+  info "Let's set up your git identity (stored in ~/.config/git/config.local)"
+  echo ""
+
+  read -rp "  Full name: " git_name
+  read -rp "  Email (e.g. you@sophiie.ai): " git_email
+  read -rp "  GPG signing key ID (leave blank to skip): " git_gpg_key
+
+  mkdir -p "$HOME/.config/git"
+  cat > "$GIT_LOCAL" <<GITEOF
+[user]
+	name = $git_name
+	email = $git_email
+GITEOF
+
+  if [[ -n "$git_gpg_key" ]]; then
+    cat >> "$GIT_LOCAL" <<GITEOF
+	signingKey = $git_gpg_key
+
+[gpg]
+	program = /opt/homebrew/bin/gpg
+GITEOF
+  fi
+
+  ok "Wrote $GIT_LOCAL"
+fi
+
+# --- 8b. Shell local config ---
+ZSH_LOCAL="$HOME/.zshrc.local"
+if [[ -f "$ZSH_LOCAL" ]]; then
+  ok "Shell local config already exists at $ZSH_LOCAL"
+else
+  info "Creating ~/.zshrc.local from example"
+  cp "$DOTFILES_DIR/home/.zshrc.local.example" "$ZSH_LOCAL"
+  ok "Wrote $ZSH_LOCAL — edit it to add your secrets and machine-specific config"
+fi
+
+# --- 9. Remaining manual steps ---
 echo ""
 info "=== Setup Complete ==="
 echo ""
-warn "ACTION REQUIRED — Create your local config files (not checked in):"
+echo "  Remaining manual steps:"
 echo ""
-echo "  1. Git identity — ~/.config/git/config.local"
-echo "     [user]"
-echo "       name = Your Name"
-echo "       email = you@sophiie.ai"
-echo "       signingKey = YOUR_GPG_KEY_ID"
-echo "     [gpg]"
-echo "       program = /opt/homebrew/bin/gpg"
-echo ""
-echo "  2. Shell secrets — ~/.zshrc.local"
-echo "     export PULUMI_CONFIG_PASSPHRASE=\"...\""
-echo "     export SOME_OTHER_SECRET=\"...\""
-echo ""
-echo "  3. Powerlevel10k — run 'p10k configure' to set up your prompt"
-echo ""
-echo "  4. tmux plugins — open tmux and press prefix + I to install plugins"
+echo "  1. Edit ~/.zshrc.local to add secrets (API keys, passphrases, etc.)"
+echo "  2. Open tmux and press Ctrl-a + I to install plugins"
+echo "  3. Restart your terminal or run: source ~/.zshrc"
 echo ""
 ok "Happy hacking"

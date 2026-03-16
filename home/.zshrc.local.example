@@ -1,0 +1,16 @@
+# Copy to ~/.zshrc.local and fill in your values
+# cp ~/.zshrc.local.example ~/.zshrc.local
+#
+# This file is sourced at the end of .zshrc — use it for secrets,
+# machine-specific PATH entries, and anything you don't want in git.
+
+# --- Secrets ---
+# export PULUMI_CONFIG_PASSPHRASE="..."
+# export ANTHROPIC_API_KEY="..."
+# export OPENAI_API_KEY="..."
+
+# --- Machine-specific PATH ---
+# export PATH="/some/custom/path:$PATH"
+
+# --- Extra aliases ---
+# alias myalias="my-command"

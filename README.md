@@ -1,6 +1,6 @@
 # Sophiie Engineering Dotfiles
 
-Standard development environment for the Sophiie engineering team.
+Shared dotfiles and bootstrap script for the Sophiie engineering team. The goal is to get any new engineer from a fresh Mac to a fully working dev environment in a single command — same shell, same tools, same conventions across the team.
 
 ## What's Included
 
@@ -29,14 +29,17 @@ chmod +x install.sh
 
 ```
 .dotfiles/
-├── install.sh              # Bootstrap everything
-├── Brewfile                # Homebrew packages
-├── home/                   # Symlinked to ~ via GNU Stow
+├── install.sh                          # Bootstrap everything
+├── Brewfile                            # Homebrew packages
+├── home/                               # Symlinked to ~ via GNU Stow
 │   ├── .zshrc
+│   ├── .p10k.zsh                       # Powerlevel10k theme (rainbow)
+│   ├── .zshrc.local.example            # Template for local shell config
 │   ├── .config/
 │   │   ├── git/
-│   │   │   ├── config      # Shared git config
-│   │   │   └── ignore      # Global gitignore
+│   │   │   ├── config                  # Shared git config
+│   │   │   ├── config.local.example    # Template for local git identity
+│   │   │   └── ignore                  # Global gitignore
 │   │   └── tmux/
 │   │       └── tmux.conf
 ├── CLAUDE.md
@@ -45,11 +48,14 @@ chmod +x install.sh
 
 ## Local Overrides (not checked in)
 
-| File | Purpose |
-|------|---------|
-| `~/.config/git/config.local` | Your name, email, GPG key |
-| `~/.zshrc.local` | Secrets, machine-specific PATH, etc. |
-| `~/.p10k.zsh` | Powerlevel10k config (run `p10k configure`) |
+The install script will interactively set these up on first run. Example files are provided in the repo for reference.
+
+| File | Purpose | Example |
+|------|---------|---------|
+| `~/.config/git/config.local` | Your name, email, GPG key | `home/.config/git/config.local.example` |
+| `~/.zshrc.local` | Secrets, machine-specific PATH, etc. | `home/.zshrc.local.example` |
+
+The install script prompts for your git name, email, and GPG key, then writes `config.local` for you. For shell secrets, it copies the example file so you just need to fill in the values.
 
 ## Adding a Package
 
