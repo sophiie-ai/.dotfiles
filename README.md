@@ -19,11 +19,16 @@ Shared dotfiles and bootstrap script for the Sophiie engineering team. The goal 
 ## Quick Start
 
 ```bash
+# On a fresh Mac without git, install CLT first (works headless, no GUI needed):
+sudo softwareupdate --install "$(softwareupdate --list 2>&1 | grep -o 'Command Line Tools for Xcode-[0-9.]*' | sort -V | tail -1)"
+
+# Then clone and run:
 git clone git@github.com:sophiie-ai/.dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
-chmod +x install.sh
 ./install.sh
 ```
+
+The install script also detects missing CLT and installs it automatically (headless-safe).
 
 ## Structure
 
