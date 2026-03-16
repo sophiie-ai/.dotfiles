@@ -100,7 +100,7 @@ fi
 echo "" > "$LOG_FILE"
 echo ""
 printf "  ${BLUE}${BOLD}╔═══════════════════════════════════════╗${RESET}\n"
-printf "  ${BLUE}${BOLD}║${RESET}   ${BOLD}Sophiie${RESET} ${DIM}Engineering Environment${RESET}    ${BLUE}${BOLD}║${RESET}\n"
+printf "  ${BLUE}${BOLD}║${RESET}   ${BOLD} Sophiie${RESET} ${DIM}Engineering Environment${RESET}    ${BLUE}${BOLD}║${RESET}\n"
 printf "  ${BLUE}${BOLD}╚═══════════════════════════════════════╝${RESET}\n"
 echo ""
 printf "  ${DIM}Log: %s${RESET}\n" "$LOG_FILE"
