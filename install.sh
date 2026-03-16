@@ -19,16 +19,33 @@ DIM="\033[2m"
 BOLD="\033[1m"
 RESET="\033[0m"
 
-# --- Spinner ---
+# --- Spinner with live output ---
 SPINNER_PID=""
 SPINNER_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+SPINNER_STATUS_FILE=""
+TERM_WIDTH=$(tput cols 2>/dev/null || echo 80)
 
 spinner_start() {
   local msg="$1"
+  SPINNER_STATUS_FILE=$(mktemp)
   (
     local i=0
     while true; do
-      printf "\r  ${BLUE}${SPINNER_FRAMES[$i]}${RESET} %s" "$msg"
+      local status=""
+      if [[ -f "$SPINNER_STATUS_FILE" ]]; then
+        status=$(tail -1 "$SPINNER_STATUS_FILE" 2>/dev/null | tr -d '\r' | sed 's/^[[:space:]]*//' || true)
+      fi
+
+      local line
+      if [[ -n "$status" ]]; then
+        line=$(printf "  ${BLUE}${SPINNER_FRAMES[$i]}${RESET} %s ${DIM}› %s${RESET}" "$msg" "$status")
+      else
+        line=$(printf "  ${BLUE}${SPINNER_FRAMES[$i]}${RESET} %s" "$msg")
+      fi
+
+      # Truncate to terminal width
+      printf "\r\033[K%s" "${line:0:$TERM_WIDTH}"
+
       i=$(( (i + 1) % ${#SPINNER_FRAMES[@]} ))
       sleep 0.08
     done
@@ -41,7 +58,11 @@ spinner_stop() {
     kill "$SPINNER_PID" 2>/dev/null
     wait "$SPINNER_PID" 2>/dev/null || true
     SPINNER_PID=""
-    printf "\r\033[K"  # Clear the spinner line
+    printf "\r\033[K"
+  fi
+  if [[ -n "$SPINNER_STATUS_FILE" ]]; then
+    rm -f "$SPINNER_STATUS_FILE"
+    SPINNER_STATUS_FILE=""
   fi
 }
 
@@ -59,7 +80,8 @@ run_with_spinner() {
   local msg="$1"
   shift
   spinner_start "$msg"
-  if "$@" >> "$LOG_FILE" 2>&1; then
+  # Pipe all output to both the log file and the spinner status file
+  if "$@" > >(tee -a "$LOG_FILE" >> "$SPINNER_STATUS_FILE") 2>&1; then
     spinner_stop
     ok "$msg"
   else
