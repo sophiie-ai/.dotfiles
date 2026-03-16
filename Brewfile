@@ -10,7 +10,6 @@ brew "direnv"                 # Per-directory env vars
 # === Node.js & JS Tooling ===
 brew "node"                   # Node.js (latest)
 brew "pnpm"                   # Package manager
-brew "corepack"               # Node.js package manager shims
 
 # === Version Control ===
 brew "git"
