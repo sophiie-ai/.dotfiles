@@ -10,9 +10,9 @@ Shared dotfiles and bootstrap script for the Sophiie engineering team. The goal 
 | Node.js | node (latest), pnpm, corepack |
 | AI | claude-code, codex-cli |
 | Git | git, gh (GitHub CLI), graphite-cli, git-lfs, gnupg |
-| Search | ripgrep, fd, fzf |
+| Search | jq, tree |
 | Terminal | tmux (with TPM, resurrect, continuum) |
-| DX | bat, eza, jq, tree, stow |
+| DX | direnv |
 | Infra | awscli, orbstack (Docker) |
 | Build | turbo |
 
@@ -31,7 +31,7 @@ chmod +x install.sh
 .dotfiles/
 ├── install.sh                          # Bootstrap everything
 ├── Brewfile                            # Homebrew packages
-├── home/                               # Symlinked to ~ via GNU Stow
+├── home/                               # Symlinked to ~ by install.sh
 │   ├── .zshrc
 │   ├── .p10k.zsh                       # Powerlevel10k theme (rainbow)
 │   ├── .zshrc.local.example            # Template for local shell config
@@ -70,7 +70,7 @@ git add Brewfile && git commit -m "add something to Brewfile"
 
 ## Adding a Config File
 
-Place it under `home/` mirroring the home directory structure, then re-stow:
+Place it under `home/` mirroring the home directory structure, then re-run the installer:
 
 ```bash
 # Example: add a new config
@@ -78,5 +78,5 @@ mkdir -p home/.config/newtool
 echo "config here" > home/.config/newtool/config.toml
 
 # Re-link
-stow -v -d . -t ~ home
+./install.sh
 ```

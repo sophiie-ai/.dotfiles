@@ -91,28 +91,42 @@ for pkg in "${npm_globals[@]}"; do
   fi
 done
 
-# --- 7. Stow dotfiles ---
-info "Linking dotfiles with stow"
-cd "$DOTFILES_DIR"
+# --- 7. Link dotfiles ---
+info "Linking dotfiles"
 
-# Back up existing files that would conflict
+HOME_DIR="$DOTFILES_DIR/home"
 backup_dir="$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
-files_to_check=(".zshrc" ".p10k.zsh" ".config/git/config" ".config/git/ignore" ".config/tmux/tmux.conf")
+backed_up=false
 
-for f in "${files_to_check[@]}"; do
-  target="$HOME/$f"
+# Walk home/ and symlink each file to ~
+while IFS= read -r -d '' src; do
+  rel="${src#$HOME_DIR/}"
+  target="$HOME/$rel"
+
+  # Skip .example files — those are templates, not configs
+  [[ "$rel" == *.example ]] && continue
+
+  # Ensure parent directory exists
+  mkdir -p "$(dirname "$target")"
+
+  # Back up existing non-symlink files
   if [[ -f "$target" && ! -L "$target" ]]; then
-    mkdir -p "$backup_dir/$(dirname "$f")"
-    cp "$target" "$backup_dir/$f"
+    mkdir -p "$backup_dir/$(dirname "$rel")"
+    cp "$target" "$backup_dir/$rel"
     rm "$target"
-    warn "Backed up ~/$f to $backup_dir/$f"
+    warn "Backed up ~/$rel to $backup_dir/$rel"
+    backed_up=true
   fi
-done
 
-# Ensure target directories exist
-mkdir -p "$HOME/.config/git" "$HOME/.config/tmux"
+  # Remove existing symlink (may point to old location)
+  [[ -L "$target" ]] && rm "$target"
 
-stow -v -d "$DOTFILES_DIR" -t "$HOME" home >> "$LOG_FILE" 2>&1
+  ln -s "$src" "$target"
+done < <(find "$HOME_DIR" -type f -print0)
+
+if $backed_up; then
+  info "Backups saved to $backup_dir"
+fi
 ok "Dotfiles linked"
 
 # --- 8. Local config setup ---

@@ -5,7 +5,6 @@ cask_args appdir: "/Applications"
 
 # === Shell ===
 brew "zsh"
-brew "stow"                   # Dotfile symlink manager
 brew "direnv"                 # Per-directory env vars
 
 # === Node.js & JS Tooling ===
@@ -20,11 +19,6 @@ brew "git-lfs"                # Large file storage
 brew "gnupg"                  # GPG for commit signing
 
 # === Search & File Tools ===
-brew "ripgrep"                # Fast code search (rg)
-brew "fd"                     # Fast find
-brew "fzf"                    # Fuzzy finder
-brew "bat"                    # Better cat
-brew "eza"                    # Modern ls
 brew "jq"                     # JSON processor
 brew "tree"                   # Directory tree view
 

@@ -33,9 +33,6 @@ esac
 
 # --- Aliases ---
 alias cc="claude --dangerously-skip-permissions"
-alias ll="eza -la --git --icons"
-alias cat="bat --paging=never"
-alias tree="eza --tree"
 
 # --- Local overrides (not checked in) ---
 [[ -f ~/.zshrc.local ]] && source ~/.zshrc.local
