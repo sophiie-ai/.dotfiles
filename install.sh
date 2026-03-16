@@ -149,6 +149,12 @@ fi
 
 # --- 2. Homebrew ---
 section "Homebrew"
+
+# Ensure brew is in PATH (may not be if .zprofile hasn't been sourced yet)
+if [[ -f /opt/homebrew/bin/brew ]]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+fi
+
 if ! command -v brew &>/dev/null; then
   info "Installing Homebrew"
   NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" >> "$LOG_FILE" 2>&1
@@ -159,6 +165,11 @@ if ! command -v brew &>/dev/null; then
   fi
 else
   ok "Homebrew already installed"
+fi
+
+# Fix symlink conflicts from corepack (if present from a previous run)
+if brew ls --versions corepack &>/dev/null; then
+  brew unlink corepack >> "$LOG_FILE" 2>&1 || true
 fi
 
 # --- 3. Brew Bundle ---
