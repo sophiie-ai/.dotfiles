@@ -1,0 +1,49 @@
+[branch]
+	sort = -committerdate
+
+[column]
+	ui = auto
+
+[commit]
+	gpgSign = true
+
+[core]
+	editor = vim
+	fsmonitor = true
+
+[fetch]
+	prune = true
+	writeCommitGraph = true
+
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	process = git-lfs filter-process
+	required = true
+	smudge = git-lfs smudge -- %f
+
+[init]
+	defaultBranch = dev
+
+[pull]
+	rebase = true
+
+[rebase]
+	updateRefs = true
+
+[rerere]
+	enabled = true
+
+[tag]
+	gpgSign = true
+
+# User config goes in ~/.config/git/config.local (not checked in)
+# Example:
+#   [user]
+#     name = Your Name
+#     email = you@sophiie.ai
+#     signingKey = YOUR_GPG_KEY_ID
+#   [gpg]
+#     program = /opt/homebrew/bin/gpg
+
+[include]
+	path = ~/.config/git/config.local
