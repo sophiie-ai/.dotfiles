@@ -32,6 +32,12 @@ info "Sophiie Engineering Environment Setup"
 info "Log: $LOG_FILE"
 echo ""
 
+# --- Sudo: ask once, keep alive ---
+info "Some steps require admin privileges. You'll be asked for your password once."
+sudo -v
+# Keep sudo alive in the background until the script finishes
+while true; do sudo -n true; sleep 60; kill -0 "$$" || exit; done 2>/dev/null &
+
 # --- 1. Xcode Command Line Tools ---
 if ! xcode-select -p &>/dev/null; then
   info "Installing Xcode Command Line Tools (required for git, compilers, etc.)"
