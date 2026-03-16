@@ -128,8 +128,9 @@ fi
 # --- 2. Homebrew ---
 section "Homebrew"
 if ! command -v brew &>/dev/null; then
-  run_with_spinner "Installing Homebrew" \
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  info "Installing Homebrew"
+  NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" >> "$LOG_FILE" 2>&1
+  ok "Homebrew installed"
 
   if [[ -f /opt/homebrew/bin/brew ]]; then
     eval "$(/opt/homebrew/bin/brew shellenv)"
@@ -140,7 +141,7 @@ fi
 
 # --- 3. Brew Bundle ---
 run_with_spinner "Installing Homebrew packages" \
-  brew bundle --file="$DOTFILES_DIR/Brewfile" --no-lock
+  brew bundle --file="$DOTFILES_DIR/Brewfile"
 
 # --- 4. Oh My Zsh ---
 section "Shell"
