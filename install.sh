@@ -252,10 +252,27 @@ if $backed_up; then
 fi
 ok "Dotfiles linked"
 
-# --- 9. Local config setup ---
+# --- 9. Obsidian Vault ---
+section "Obsidian"
+VAULT_DIR="$HOME/Documents/Sophiie/SophiieVault"
+if [[ -d "$VAULT_DIR" ]]; then
+  ok "SophiieVault already exists at $VAULT_DIR"
+else
+  mkdir -p "$VAULT_DIR/.obsidian"
+  cat > "$VAULT_DIR/.obsidian/app.json" <<'OBSEOF'
+{
+  "vimMode": false,
+  "showLineNumber": true,
+  "strictLineBreaks": false
+}
+OBSEOF
+  ok "Created SophiieVault at $VAULT_DIR"
+fi
+
+# --- 10. Local config setup ---
 section "Local Configuration"
 
-# --- 9a. Git identity ---
+# --- 10a. Git identity ---
 GIT_LOCAL="$HOME/.config/git/config.local"
 if [[ -f "$GIT_LOCAL" ]]; then
   ok "Git local config already exists"
@@ -287,7 +304,7 @@ GITEOF
   ok "Wrote $GIT_LOCAL"
 fi
 
-# --- 9b. Shell local config ---
+# --- 10b. Shell local config ---
 ZSH_LOCAL="$HOME/.zshrc.local"
 if [[ -f "$ZSH_LOCAL" ]]; then
   ok "Shell local config already exists"
@@ -296,7 +313,7 @@ else
   ok "Created ~/.zshrc.local — edit to add your secrets"
 fi
 
-# --- 10. Done ---
+# --- 11. Done ---
 echo ""
 printf "  ${GREEN}${BOLD}╔═══════════════════════════════════════╗${RESET}\n"
 printf "  ${GREEN}${BOLD}║${RESET}          ${BOLD}Setup Complete${RESET} ${GREEN}✓${RESET}             ${GREEN}${BOLD}║${RESET}\n"

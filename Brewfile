@@ -30,6 +30,9 @@ brew "tmux"
 # === Containers ===
 cask "orbstack"               # Docker Desktop alternative (lightweight)
 
+# === Knowledge Base ===
+cask "obsidian"                # Sophiie knowledge vault
+
 # === Apps (optional — uncomment what you use) ===
 # cask "raycast"
 # cask "arc"
