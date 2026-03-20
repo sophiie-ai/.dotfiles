@@ -222,6 +222,16 @@ done
 # --- 8. Link dotfiles ---
 section "Dotfiles"
 
+# Remove legacy bash configs that interfere with our zsh setup
+for bash_file in "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.bash_login"; do
+  if [[ -f "$bash_file" && ! -L "$bash_file" ]]; then
+    mkdir -p "$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
+    cp "$bash_file" "$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)/$(basename "$bash_file")"
+    rm "$bash_file"
+    warn "Removed $(basename "$bash_file") (backed up) — this is a zsh-only setup"
+  fi
+done
+
 HOME_DIR="$DOTFILES_DIR/home"
 backup_dir="$HOME/.dotfiles-backup/$(date +%Y%m%d-%H%M%S)"
 backed_up=false
